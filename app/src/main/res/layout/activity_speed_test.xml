@@ -10,54 +10,74 @@
     tools:context="sam.speedtest.SpeedTestActivity">
 
     <RelativeLayout
-        android:orientation="horizontal"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/textView"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="WiFi"
-            android:id="@+id/textView"
-            android:layout_alignParentTop="true"
             android:layout_alignParentStart="true"
-            android:onClick="startWifiTest"/>
+            android:layout_alignParentTop="true"
+            android:text="WiFi"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
 
         <Button
+            android:id="@+id/wifiTestBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:onClick="startWifiTest"
             android:text="Test"
-            android:id="@+id/wifiTestBtn"
-            android:layout_alignParentBottom="true"
+            android:layout_above="@+id/wifiTestStopBtn"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/wifiSpeed"
+            android:layout_below="@+id/textView"
             android:layout_alignParentStart="true"
             android:layout_alignParentEnd="true"
-            android:onClick="startNetworkTest"/>
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:orientation="horizontal"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1">
-
-        <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="3G/4G/LTE"
-            android:id="@+id/textView2"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentStart="true" />
+            android:text="0" />
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Test"
-            android:id="@+id/ntwTestBtn"
+            android:text="Stop"
+            android:id="@+id/wifiTestStopBtn"
+            android:onClick="stopWifiTest"
             android:layout_alignParentBottom="true"
             android:layout_alignParentStart="true"
             android:layout_alignParentEnd="true" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:text="3G/4G/LTE"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <Button
+            android:id="@+id/ntwTestBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentStart="true"
+            android:text="Test"
+            android:onClick="startNetworkTest" />
     </RelativeLayout>
 </LinearLayout>

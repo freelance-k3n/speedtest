@@ -6,34 +6,48 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.wifi.WifiManager;
-import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
-import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Arrays;
 
 public class SpeedTestActivity extends AppCompatActivity {
 
     private ConnectivityManager connManager;
 
     private String url = "http://ubuntu.excellmedia.net/releases/16.04.1/ubuntu-16.04.1-desktop-amd64.iso";
+    private double FIVE_MB = 1024 * 1024 * 1;
+
+    private TextView wifiSpeed = null;
+    private Button wifiTestBtn = null;
+    private Button wifiTestStopBtn = null;
+    private Button ntwTestBtn = null;
+    private boolean testInProgress = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
         setContentView(R.layout.activity_speed_test);
 
-        final Button wifiTestBtn = (Button) findViewById(R.id.wifiTestBtn);
-        final Button ntwTestBtn = (Button) findViewById(R.id.ntwTestBtn);
+        wifiTestBtn = (Button) findViewById(R.id.wifiTestBtn);
+        wifiTestStopBtn = (Button) findViewById(R.id.wifiTestStopBtn);
+
+        ntwTestBtn = (Button) findViewById(R.id.ntwTestBtn);
+        wifiSpeed = (TextView) findViewById(R.id.wifiSpeed);
 
         connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         final NetworkInfo networkInfo = connManager.getActiveNetworkInfo();
 
+        wifiTestStopBtn.setVisibility(View.GONE);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -60,45 +74,48 @@ public class SpeedTestActivity extends AppCompatActivity {
     }
 
     public void startWifiTest(View view) {
-        startTest();
+        startTest(wifiTestBtn, wifiTestStopBtn, wifiSpeed);
     }
 
     public void startNetworkTest(View view) {
 
     }
 
-    private void startTest() {
+    private void startTest(Button startTestBtn, Button stopTestBtn, TextView wifiSpeed) {
         try {
             InputStream bis = new URL(url).openStream();
-
-            long start = System.nanoTime();
-            long totalRead = 0;
-            final double NANOS_PER_SECOND = 1000000000.0;
-            final double FIVE_MB = 5 * 1024 * 1024;
 
             int bytesTransferred = 0;
             long totalBytesTransferred = 0, kbsTotal = 0;
             byte[] buffer = new byte[1024];
 
             long time = System.currentTimeMillis();
+            long start = System.currentTimeMillis();
 
             double percentCompleted = 0.0;
-            Log.w("mLog", "STARTED");
-            while ((bytesTransferred = bis.read(buffer, 0, 1024)) > 0 || totalBytesTransferred <= FIVE_MB) {
+            startTestBtn.setEnabled(false);
+            stopTestBtn.setEnabled(true);
+            testInProgress = true;
+            while ((bytesTransferred = bis.read(buffer)) > 0 && testInProgress) {
                 percentCompleted = ((long)(totalBytesTransferred / FIVE_MB * 10000.0D) / 100.0D);
                 long d = System.currentTimeMillis() - time;
                 if(d > 1000L) {
                     time = System.currentTimeMillis();
                     long currentkBRate = kbsTotal / 1024L;
-                    Log.w("mLog", "Current: " + currentkBRate + " KB/s");
-                    Log.w("mLog", "Time: " + ((time - start) / 1000L));
+                    wifiSpeed.setText(currentkBRate + " KB/s");
+                    kbsTotal = 0;
                 } else {
                     kbsTotal += bytesTransferred;
                 }
-                totalRead += bytesTransferred;
             }
+            startTestBtn.setEnabled(true);
+            stopTestBtn.setEnabled(false);
         } catch (Exception e) {
-            Log.w("mLog", e.getMessage());
+            Log.w("mLog", "" + e.getMessage());
         }
+    }
+
+    public void stopWifiTest(View view) {
+        testInProgress = false;
     }
 }
