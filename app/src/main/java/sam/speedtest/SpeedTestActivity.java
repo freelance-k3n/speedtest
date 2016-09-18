@@ -33,6 +33,12 @@ public class SpeedTestActivity extends AppCompatActivity {
     private TextView wifiSpeed = null;
     private TextView mobileSpeed = null;
 
+    private TextView wifiDuration = null;
+    private TextView mobileDuration = null;
+
+    private TextView wifiAvg = null;
+    private TextView mobileAvg = null;
+
     private ToggleButton wifiTglBtn = null;
     private ToggleButton ntwTglBtn = null;
 
@@ -51,6 +57,12 @@ public class SpeedTestActivity extends AppCompatActivity {
 
         wifiSpeed = (TextView) findViewById(R.id.wifiSpeed);
         mobileSpeed = (TextView) findViewById(R.id.mobileSpeed);
+
+        wifiDuration = (TextView) findViewById(R.id.wifiDuration);
+        mobileDuration = (TextView) findViewById(R.id.mobileDuration);
+
+        wifiAvg = (TextView) findViewById(R.id.wifiAvg);
+        mobileAvg = (TextView) findViewById(R.id.mobileAvg);
 
         wifiProgress = (ProgressBar) findViewById(R.id.wifiProgress);
         mobileProgress = (ProgressBar) findViewById(R.id.mobileProgress);
@@ -80,17 +92,17 @@ public class SpeedTestActivity extends AppCompatActivity {
     }
 
     public void startWifiTest(View view) {
-        startTest((ToggleButton) view, wifiSpeed, wifiProgress, url, FIVE_MB);
+        startTest((ToggleButton) view, wifiSpeed, wifiDuration, wifiAvg, wifiProgress, url, FIVE_MB);
     }
 
     public void startNetworkTest(View view) {
-        startTest((ToggleButton) view, mobileSpeed, mobileProgress, url, FIVE_MB);
+        startTest((ToggleButton) view, mobileSpeed, mobileDuration, mobileAvg, mobileProgress, url, FIVE_MB);
     }
 
-    private void startTest(ToggleButton view, TextView wifiSpeed, ProgressBar progress, String url, long testSize) {
+    private void startTest(ToggleButton view, TextView speedHolder, TextView duration, TextView speedAvg, ProgressBar progress, String url, long testSize) {
         ToggleButton btn = view;
         final boolean state = btn.isChecked();
-        SpeedTester tester = new SpeedTester(btn, progress, wifiSpeed, testSize);
+        SpeedTester tester = new SpeedTester(btn, progress, speedHolder, duration, speedAvg, testSize);
         if (!state) {
             tester.execute(url);
         }
@@ -99,7 +111,9 @@ public class SpeedTestActivity extends AppCompatActivity {
 
 class SpeedTester extends AsyncTask<String, Long, Void> {
 
-    private TextView textView;
+    private TextView instantSpeed;
+    private TextView duration;
+    private TextView average;
     private ToggleButton tglBtn;
     private ProgressBar progress;
     private boolean testInProgress = true;
@@ -107,11 +121,19 @@ class SpeedTester extends AsyncTask<String, Long, Void> {
 
     private String exception = null;
 
-    public SpeedTester(ToggleButton tglBtn, ProgressBar progress, TextView textView, long testSize) {
+    private int count = 0;
+
+    private long time = 0, start = 0;
+
+    private double total = 0;
+
+    public SpeedTester(ToggleButton tglBtn, ProgressBar progress, TextView instantSpeed, TextView duration, TextView speedAvg, long testSize) {
         this.tglBtn = tglBtn;
-        this.textView = textView;
+        this.instantSpeed = instantSpeed;
         this.progress = progress;
         this.testSize = testSize;
+        this.average = speedAvg;
+        this.duration = duration;
     }
 
     @Override
@@ -123,22 +145,28 @@ class SpeedTester extends AsyncTask<String, Long, Void> {
     @Override
     protected Void doInBackground(String... url) {
         try {
-            InputStream bis = new URL(url[0]).openStream();
+            InputStream is = new URL(url[0]).openStream();
             byte[] buffer = new byte[1024];
 
-            long bytesTransferred = 0, totalBytesTransferred = 0, kbPerSec = 0, time = System.currentTimeMillis();
-
-            while ((bytesTransferred = bis.read(buffer)) > 0 && totalBytesTransferred <= testSize && testInProgress) {
+            long bytesTransferred = 0, totalBytesTransferred = 0, bytesPerSec = 0;
+            start = time = System.currentTimeMillis();
+            count = 0;
+            while ((bytesTransferred = is.read(buffer)) > 0 && totalBytesTransferred <= testSize && testInProgress) {
                 long d = System.currentTimeMillis() - time;
                 if(d > 1000L) {
-                    publishProgress(kbPerSec, totalBytesTransferred);
-                    kbPerSec = 0;
+                    publishProgress(bytesPerSec, totalBytesTransferred);
+                    bytesPerSec = 0;
                     time = System.currentTimeMillis();
                 } else {
-                    kbPerSec += bytesTransferred;
+                    bytesPerSec += bytesTransferred;
                     totalBytesTransferred += bytesTransferred;
                 }
             }
+            try {
+                if(null != is) {
+                    is.close();
+                }
+            } catch (Exception e1) { }
         } catch (Exception e) {
             testInProgress = false;
             publishProgress(0L, 1L);
@@ -150,7 +178,12 @@ class SpeedTester extends AsyncTask<String, Long, Void> {
     @Override
     protected void onProgressUpdate(Long... values) {
         super.onProgressUpdate(values);
-        textView.setText(kbString(values[0]) + " KB/s");
+        count++;
+        double instant = kb(values[0]);
+        total += instant;
+        instantSpeed.setText(Double.toString(instant) + " KB/s");
+        average.setText(Double.toString(twoDigits(total / count)) + " KB/s");
+        duration.setText(((System.currentTimeMillis() - start) / 1000) + " Secs");
         progress.setProgress((int) (values[1] * 100/ testSize));
         if(testInProgress == false) {
             tglBtn.setChecked(true);
@@ -170,8 +203,11 @@ class SpeedTester extends AsyncTask<String, Long, Void> {
         }
     }
 
-    private String kbString(long speedInBytes) {
-        double kb = (double)((long)((double)(speedInBytes / 1024) * 100) / 100);
-        return Double.toString(kb);
+    private double kb(long speedInBytes) {
+        return ((long)(((double)speedInBytes) * 100.0 / 1024.0)) / 100.0;
+    }
+
+    private double twoDigits(double value) {
+        return ((long)(value * 100.0)) / 100.0;
     }
 }
